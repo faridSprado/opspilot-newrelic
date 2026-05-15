@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass(slots=True)
+class CacheEntry:
+    value: Any
+    expires_at: float
+
+
+class TTLCache:
+    def __init__(self, default_ttl_seconds: int = 60) -> None:
+        self.default_ttl_seconds = default_ttl_seconds
+        self._items: dict[str, CacheEntry] = {}
+
+    def get(self, key: str) -> Any | None:
+        entry = self._items.get(key)
+        if not entry:
+            return None
+        if entry.expires_at < time.time():
+            self._items.pop(key, None)
+            return None
+        return entry.value
+
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
+        ttl = ttl_seconds or self.default_ttl_seconds
+        self._items[key] = CacheEntry(value=value, expires_at=time.time() + ttl)
+
+    def delete(self, key: str) -> None:
+        self._items.pop(key, None)
+
+    def clear(self) -> None:
+        self._items.clear()

@@ -1,0 +1,323 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: 5 7 13;
+  --foreground: 241 245 249;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  min-height: 100vh;
+  background: #05070d;
+  color: rgb(var(--foreground));
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+body::selection { background: rgba(0, 172, 105, .32); }
+
+.premium-border {
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: linear-gradient(180deg, rgba(15,23,42,.78), rgba(2,6,23,.76));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 20px 70px rgba(0,0,0,.24);
+  backdrop-filter: blur(18px);
+}
+
+.focus-ring:focus {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid rgb(52 211 153);
+  outline-offset: 2px;
+}
+
+.metric-number { font-variant-numeric: tabular-nums; }
+
+.bg-grid {
+  background-size: 48px 48px;
+  background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: rgba(15,23,42,.55); }
+::-webkit-scrollbar-thumb { background: rgba(100,116,139,.55); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.75); }
+
+html.light {
+  color-scheme: light;
+  --background: 247 250 248;
+  --foreground: 15 23 42;
+}
+
+html.light body {
+  background: #f7faf8;
+  color: rgb(var(--foreground));
+}
+
+html.light .bg-ink,
+html.light .bg-slate-950,
+html.light .bg-slate-900,
+html.light .bg-\[\#03050a\],
+html.light .bg-\[\#070b16\],
+html.light .bg-\[\#070a12\] {
+  background-color: #f7faf8;
+}
+
+html.light .bg-slate-950\/70,
+html.light .bg-slate-950\/65,
+html.light .bg-slate-950\/85,
+html.light .bg-slate-900\/80,
+html.light [class*="bg-white/["],
+html.light [class*="bg-white/"] {
+  background-color: rgba(255, 255, 255, .82);
+}
+
+html.light .premium-border {
+  border-color: rgba(15, 23, 42, .12);
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(240,253,244,.82));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 20px 55px rgba(15,23,42,.08);
+}
+
+html.light .shadow-premium {
+  box-shadow: 0 24px 80px rgba(15,23,42,.14);
+}
+
+html.light .bg-grid {
+  background-image: linear-gradient(rgba(15,23,42,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,.06) 1px, transparent 1px);
+}
+
+html.light [class*="border-white/"],
+html.light .border-white\/10,
+html.light .border-white\/\[\.08\],
+html.light .border-white\/\[\.12\] {
+  border-color: rgba(15, 23, 42, .12);
+}
+
+html.light .text-white,
+html.light .text-slate-100,
+html.light .text-slate-200,
+html.light .text-slate-300 {
+  color: #0f172a;
+}
+
+html.light .text-slate-400,
+html.light .text-slate-500 {
+  color: #475569;
+}
+
+html.light .placeholder\:text-slate-500::placeholder {
+  color: #64748b;
+}
+
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: rgba(255,255,255,.9);
+  color: #0f172a;
+}
+
+html.light .bg-gradient-to-b.from-white,
+html.light .bg-gradient-to-b.from-slate-900,
+html.light .bg-gradient-to-b.from-slate-950 {
+  background-image: linear-gradient(to bottom, #ffffff, #f0fdf4);
+}
+
+html.light .from-white,
+html.light .via-slate-100,
+html.light .to-slate-400 {
+  --tw-gradient-from: #0f172a var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(15 23 42 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #334155 var(--tw-gradient-via-position), #64748b var(--tw-gradient-to-position);
+}
+
+html.light [class*="shadow-emerald-950"] {
+  --tw-shadow-color: rgba(0, 172, 105, .12);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+
+html.light button[aria-label*="tema"] {
+  background-color: rgba(255,255,255,.94);
+  color: #047857;
+}
+
+html.light button[aria-label*="tema"]:hover {
+  background-color: #d1fae5;
+  color: #064e3b;
+}
+
+html.light ::-webkit-scrollbar-track { background: rgba(226,232,240,.8); }
+html.light ::-webkit-scrollbar-thumb { background: rgba(100,116,139,.45); }
+
+/* Light theme contrast fixes: keep the New Relic green identity while ensuring
+   text, icons, pills and sidebar actions remain readable on light surfaces. */
+html.light .bg-gradient-to-b.from-white.bg-clip-text.text-transparent {
+  background-image: linear-gradient(to bottom, #0f172a, #1e293b 48%, #475569);
+}
+
+html.light .text-emerald-50,
+html.light .text-emerald-100,
+html.light .text-emerald-200,
+html.light .text-emerald-300,
+html.light .text-lime-200,
+html.light .text-lime-300 {
+  color: #047857;
+}
+
+html.light .text-emerald-100\/80,
+html.light .text-emerald-200\/80,
+html.light .text-emerald-300\/80 {
+  color: rgba(4, 120, 87, .82);
+}
+
+html.light .text-amber-100,
+html.light .text-amber-200,
+html.light .text-amber-300 {
+  color: #92400e;
+}
+
+html.light .text-red-100,
+html.light .text-red-200,
+html.light .text-red-300 {
+  color: #b91c1c;
+}
+
+html.light .hover\:text-white:hover,
+html.light .hover\:text-slate-100:hover,
+html.light .hover\:text-slate-200:hover,
+html.light .hover\:text-slate-300:hover {
+  color: #0f172a;
+}
+
+html.light .hover\:text-emerald-100:hover,
+html.light .hover\:text-emerald-200:hover,
+html.light .hover\:text-emerald-300:hover,
+html.light .group:hover .group-hover\:text-emerald-200 {
+  color: #047857;
+}
+
+html.light .hover\:bg-white\/\[\.03\]:hover,
+html.light .hover\:bg-white\/\[\.04\]:hover,
+html.light .hover\:bg-white\/\[\.06\]:hover,
+html.light .hover\:bg-white\/\[\.08\]:hover,
+html.light .hover\:bg-slate-900\/80:hover {
+  background-color: rgba(209, 250, 229, .62);
+}
+
+html.light .bg-emerald-300\/\[\.06\],
+html.light .bg-emerald-300\/\[\.08\],
+html.light .bg-emerald-300\/\[\.10\],
+html.light .bg-emerald-300\/10,
+html.light .bg-emerald-300\/\[\.12\],
+html.light .bg-emerald-300\/\[\.15\] {
+  background-color: rgba(209, 250, 229, .86);
+}
+
+html.light .bg-amber-300\/\[\.08\] {
+  background-color: rgba(254, 243, 199, .82);
+}
+
+html.light .bg-red-500\/\[\.08\],
+html.light .bg-red-500\/\[\.15\] {
+  background-color: rgba(254, 226, 226, .85);
+}
+
+html.light .ring-emerald-300\/20,
+html.light .border-emerald-300\/20,
+html.light .border-emerald-300\/25,
+html.light .border-emerald-300\/30,
+html.light .border-emerald-300\/\[\.35\] {
+  --tw-ring-color: rgba(4, 120, 87, .24);
+  border-color: rgba(4, 120, 87, .24);
+}
+
+html.light svg {
+  stroke-width: 2.15;
+}
+
+html.light .bg-slate-900,
+html.light .bg-slate-950,
+html.light .bg-\[\#070b16\] {
+  color: #0f172a;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #020617 !important;
+    color: #f8fafc !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-chat-area,
+  .print-chat-area * {
+    visibility: visible !important;
+  }
+
+  .print-chat-area {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    background: #020617 !important;
+    color: #f8fafc !important;
+  }
+
+  .print-chat-area .premium-border,
+  .print-chat-area .rounded-3xl,
+  .print-chat-area .rounded-2xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-chat-area .overflow-auto,
+  .print-chat-area .overflow-hidden,
+  .print-chat-area .max-h-96,
+  .print-chat-area .flex-1 {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  .print-chat-area .no-print,
+  .print-chat-area .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .print-chat-area details {
+    display: block !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-chat-area summary {
+    list-style: none !important;
+  }
+
+  .print-chat-area canvas,
+  .print-chat-area svg {
+    max-width: 100% !important;
+  }
+
+  .print-chat-area table {
+    page-break-inside: auto;
+  }
+
+  .print-chat-area tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

@@ -2,6 +2,8 @@
 
 **OpsPilot for New Relic** es una aplicación web full-stack que convierte datos reales de observabilidad en respuestas, gráficas y análisis accionables mediante un copiloto de IA. Está diseñada para conectar una cuenta de New Relic, descubrir aplicaciones APM, consultar métricas con lenguaje natural, generar visualizaciones y exportar conversaciones completas en PDF.
 
+Demo: [https://opspilot-newrelic.vercel.app]
+
 Proyecto desarrollado por **Farid Stiven Prado Hoyos**, ingeniero multimedia.  
 LinkedIn: [linkedin.com/in/faridprado](https://www.linkedin.com/in/faridprado/)
 
@@ -425,28 +427,9 @@ opspilot-newrelic/
 
 ---
 
-## Roadmap sugerido
-
-- Autenticación multiusuario real.
-- PostgreSQL + Alembic.
-- Redis para sesiones, rate limiting y cache.
-- Workspaces por equipo.
-- Dashboards guardados.
-- Análisis de anomalías con estacionalidad.
-- Integración opcional con MCP server de New Relic.
-- Tests end-to-end con Playwright.
-- Despliegue cloud con contenedores.
-
----
-
 ## Autor
 
 **Farid Stiven Prado Hoyos**  
 Ingeniero multimedia  
 LinkedIn: [https://www.linkedin.com/in/faridprado/](https://www.linkedin.com/in/faridprado/)
 
----
-
-## Licencia
-
-Este repositorio no incluye una licencia explícita todavía. Si quieres publicarlo como open source, añade una licencia antes de aceptar contribuciones externas.

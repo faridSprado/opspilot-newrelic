@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Cloud, Loader2, RefreshCw, WifiOff } from 'lucide-react';
 import { API_BASE, type BackendWakeupEventDetail, shouldWarmBackend, warmBackend } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -14,39 +14,74 @@ export function BackendWakeup() {
   const [attempt, setAttempt] = useState<number | undefined>();
   const [maxAttempts, setMaxAttempts] = useState<number | undefined>();
   const [visible, setVisible] = useState(false);
+  const visibleRef = useRef(false);
+  const lastVisibleStatusRef = useRef<VisibleStatus>('idle');
   const canWarm = useMemo(() => shouldWarmBackend(), []);
+
+  useEffect(() => {
+    visibleRef.current = visible;
+  }, [visible]);
+
+  useEffect(() => {
+    lastVisibleStatusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     if (!canWarm) return;
 
     let readyTimer: number | undefined;
+    let hideTimer: number | undefined;
+
+    const hideBanner = () => {
+      setVisible(false);
+      hideTimer = window.setTimeout(() => {
+        if (!visibleRef.current) {
+          setStatus('idle');
+          setMessage('');
+          setAttempt(undefined);
+          setMaxAttempts(undefined);
+        }
+      }, 250);
+    };
 
     const onWakeup = (event: Event) => {
       const detail = (event as CustomEvent<BackendWakeupEventDetail>).detail;
+      window.clearTimeout(readyTimer);
+      window.clearTimeout(hideTimer);
+
+      if (detail.status === 'ready') {
+        // A successful request should clear any stale warning. If the banner was not visible,
+        // stay silent so a healthy backend never flashes a confusing success/wakeup card.
+        setStatus('ready');
+        setMessage(detail.message ?? 'OpsPilot está listo para recibir consultas.');
+        setAttempt(detail.attempt);
+        setMaxAttempts(detail.maxAttempts);
+
+        if (visibleRef.current && lastVisibleStatusRef.current !== 'idle') {
+          setVisible(true);
+          readyTimer = window.setTimeout(hideBanner, 900);
+        } else {
+          hideBanner();
+        }
+        return;
+      }
+
       setStatus(detail.status);
       setMessage(detail.message ?? 'Preparando el servicio de OpsPilot...');
       setAttempt(detail.attempt);
       setMaxAttempts(detail.maxAttempts);
-
-      window.clearTimeout(readyTimer);
-
-      if (detail.status === 'ready') {
-        setVisible(true);
-        readyTimer = window.setTimeout(() => setVisible(false), 1800);
-        return;
-      }
-
       setVisible(true);
     };
 
     window.addEventListener('opspilot-backend-wakeup', onWakeup);
 
-    // Warm Render silently on page load. No banner is shown for healthy/fast responses,
-    // so visitors do not see a false “despertando” message when the backend is already up.
+    // Warm Render silently on page load. This never shows the banner: the UI is reserved
+    // for real user actions that fail or clearly need to wait for the backend.
     warmBackend({ attempts: 1, timeoutMs: 3500, showUi: false }).catch(() => undefined);
 
     return () => {
       window.clearTimeout(readyTimer);
+      window.clearTimeout(hideTimer);
       window.removeEventListener('opspilot-backend-wakeup', onWakeup);
     };
   }, [canWarm]);
@@ -88,7 +123,7 @@ export function BackendWakeup() {
               </span>
             </div>
             <p className="mt-1 text-sm leading-5 text-slate-300">
-              {message || 'El servicio gratuito puede tardar unos segundos si estuvo inactivo. Lo estamos preparando antes de que conectes New Relic.'}
+              {message || 'El servicio gratuito puede tardar unos segundos si estuvo inactivo. Lo estamos preparando antes de continuar.'}
             </p>
             {!ready && (
               <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
@@ -107,7 +142,7 @@ export function BackendWakeup() {
                 setStatus('checking');
                 setMessage('Reintentando conexión con el backend...');
                 setVisible(true);
-                warmBackend({ force: true, attempts: 10, timeoutMs: 6500, intervalMs: 3500, showUi: true, displayDelayMs: 0 }).catch(() => undefined);
+                warmBackend({ force: true, attempts: 6, timeoutMs: 6500, intervalMs: 2500, showUi: true, displayDelayMs: 0 }).catch(() => undefined);
               }}
             >
               <RefreshCw className="h-4 w-4" />

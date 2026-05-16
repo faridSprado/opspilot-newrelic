@@ -44,6 +44,16 @@ function emitBackendWakeup(detail: Omit<BackendWakeupEventDetail, 'apiBase'>) {
   );
 }
 
+function markBackendReady(options: { notify?: boolean; message?: string } = {}) {
+  backendReadyAt = Date.now();
+  if (options.notify) {
+    emitBackendWakeup({
+      status: 'ready',
+      message: options.message ?? 'OpsPilot está listo para recibir consultas.'
+    });
+  }
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -120,14 +130,8 @@ export async function warmBackend(
         try {
           const ok = await fetchBackendHealth(timeoutMs);
           if (ok) {
-            backendReadyAt = Date.now();
+            markBackendReady({ notify: uiVisible, message: 'OpsPilot está listo para recibir consultas.' });
             if (displayTimer) window.clearTimeout(displayTimer);
-            emitIfVisible({
-              status: 'ready',
-              attempt,
-              maxAttempts: attempts,
-              message: 'OpsPilot está listo para recibir consultas.'
-            });
             return true;
           }
         } catch {
@@ -226,41 +230,48 @@ async function performApiFetch(path: string, init: RequestInit, headers: Headers
   return fetch(`${API_BASE}${path}`, { ...init, headers, cache: 'no-store' });
 }
 
+async function wakeAndRetry(path: string, init: RequestInit, headers: Headers) {
+  const warmed = await warmBackend({ force: true, attempts: 6, timeoutMs: 6500, intervalMs: 2500, showUi: true, displayDelayMs: 1200 });
+  if (!warmed) throw new Error(buildConnectionError());
+
+  try {
+    const retryResponse = await performApiFetch(path, init, headers);
+    if (retryResponse.ok || !shouldRetryBackendStatus(retryResponse.status)) {
+      if (retryResponse.ok) markBackendReady({ notify: true });
+      return retryResponse;
+    }
+  } catch {
+    throw new Error(buildConnectionError());
+  }
+
+  throw new Error(buildConnectionError());
+}
+
 export async function apiRequest<T>(path: string, init: RequestInit = {}, options: { allowOkFalse?: boolean } = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (!(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   const profileId = getStoredProfileId();
   if (profileId) headers.set('X-Credential-Profile-Id', profileId);
 
-  if (path !== '/health' && shouldWarmBackend()) {
-    await warmBackend({ attempts: 6, timeoutMs: 5500, intervalMs: 3000, showUi: true, displayDelayMs: 6500 });
-  }
-
   let response: Response;
   try {
     response = await performApiFetch(path, init, headers);
   } catch {
     if (shouldWarmBackend()) {
-      const warmed = await warmBackend({ force: true, attempts: 10, timeoutMs: 6500, intervalMs: 3500, showUi: true, displayDelayMs: 1000 });
-      if (warmed) {
-        try {
-          response = await performApiFetch(path, init, headers);
-        } catch {
-          throw new Error(buildConnectionError());
-        }
-      } else {
-        throw new Error(buildConnectionError());
-      }
+      response = await wakeAndRetry(path, init, headers);
     } else {
       throw new Error(buildConnectionError());
     }
   }
 
   if (shouldWarmBackend() && shouldRetryBackendStatus(response.status)) {
-    const warmed = await warmBackend({ force: true, attempts: 10, timeoutMs: 6500, intervalMs: 3500, showUi: true, displayDelayMs: 1000 });
-    if (warmed) {
-      response = await performApiFetch(path, init, headers);
-    }
+    response = await wakeAndRetry(path, init, headers);
+  }
+
+  if (response.ok && shouldWarmBackend()) {
+    // Any successful real API response is stronger evidence than a background health check.
+    // Clear stale “offline/waking” UI without showing a new banner.
+    markBackendReady({ notify: true, message: 'OpsPilot está listo para recibir consultas.' });
   }
 
   const payload = await response.json().catch(() => ({}));

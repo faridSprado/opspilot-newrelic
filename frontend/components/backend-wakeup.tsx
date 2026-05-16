@@ -19,9 +19,7 @@ export function BackendWakeup() {
   useEffect(() => {
     if (!canWarm) return;
 
-    let slowTimer: number | undefined;
     let readyTimer: number | undefined;
-    let hasBeenSlow = false;
 
     const onWakeup = (event: Event) => {
       const detail = (event as CustomEvent<BackendWakeupEventDetail>).detail;
@@ -30,46 +28,39 @@ export function BackendWakeup() {
       setAttempt(detail.attempt);
       setMaxAttempts(detail.maxAttempts);
 
-      if (detail.status === 'checking' || detail.status === 'warming') {
+      if (detail.status === 'checking') {
         window.clearTimeout(readyTimer);
+        return;
+      }
+
+      if (detail.status === 'warming') {
+        window.clearTimeout(readyTimer);
+        setVisible(true);
         return;
       }
 
       if (detail.status === 'ready') {
-        window.clearTimeout(slowTimer);
-        if (!hasBeenSlow) {
-          setVisible(false);
-          return;
-        }
-        setVisible(true);
         window.clearTimeout(readyTimer);
-        readyTimer = window.setTimeout(() => setVisible(false), 3200);
+        setVisible(false);
         return;
       }
 
       if (detail.status === 'offline') {
-        window.clearTimeout(slowTimer);
-        hasBeenSlow = true;
+        window.clearTimeout(readyTimer);
         setVisible(true);
       }
     };
 
     window.addEventListener('opspilot-backend-wakeup', onWakeup);
     setStatus('checking');
-    slowTimer = window.setTimeout(() => {
-      hasBeenSlow = true;
-      setVisible(true);
-    }, 1200);
 
     warmBackend().catch(() => {
-      hasBeenSlow = true;
       setStatus('offline');
       setMessage('No fue posible confirmar el backend todavía. Puedes reintentar en unos segundos.');
       setVisible(true);
     });
 
     return () => {
-      window.clearTimeout(slowTimer);
       window.clearTimeout(readyTimer);
       window.removeEventListener('opspilot-backend-wakeup', onWakeup);
     };

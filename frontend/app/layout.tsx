@@ -3,6 +3,7 @@ import './globals.css';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { BackendWakeup } from '@/components/backend-wakeup';
 
 export const metadata: Metadata = {
   title: 'OpsPilot for New Relic',
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
         <ThemeProvider>
           <QueryProvider>{children}</QueryProvider>
+          <BackendWakeup />
           <ThemeToggle />
         </ThemeProvider>
       </body>

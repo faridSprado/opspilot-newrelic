@@ -28,37 +28,22 @@ export function BackendWakeup() {
       setAttempt(detail.attempt);
       setMaxAttempts(detail.maxAttempts);
 
-      if (detail.status === 'checking') {
-        window.clearTimeout(readyTimer);
-        return;
-      }
-
-      if (detail.status === 'warming') {
-        window.clearTimeout(readyTimer);
-        setVisible(true);
-        return;
-      }
+      window.clearTimeout(readyTimer);
 
       if (detail.status === 'ready') {
-        window.clearTimeout(readyTimer);
-        setVisible(false);
+        setVisible(true);
+        readyTimer = window.setTimeout(() => setVisible(false), 1800);
         return;
       }
 
-      if (detail.status === 'offline') {
-        window.clearTimeout(readyTimer);
-        setVisible(true);
-      }
+      setVisible(true);
     };
 
     window.addEventListener('opspilot-backend-wakeup', onWakeup);
-    setStatus('checking');
 
-    warmBackend().catch(() => {
-      setStatus('offline');
-      setMessage('No fue posible confirmar el backend todavía. Puedes reintentar en unos segundos.');
-      setVisible(true);
-    });
+    // Warm Render silently on page load. No banner is shown for healthy/fast responses,
+    // so visitors do not see a false “despertando” message when the backend is already up.
+    warmBackend({ attempts: 1, timeoutMs: 3500, showUi: false }).catch(() => undefined);
 
     return () => {
       window.clearTimeout(readyTimer);
@@ -79,7 +64,7 @@ export function BackendWakeup() {
         className={cn(
           'premium-border overflow-hidden rounded-3xl shadow-premium',
           ready && 'border-emerald-300/30',
-          offline && 'border-amber-300/30',
+          offline && 'border-amber-300/30'
         )}
       >
         <div className="flex items-start gap-4 p-4 sm:p-5">
@@ -88,7 +73,7 @@ export function BackendWakeup() {
               'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border',
               ready && 'border-emerald-300/30 bg-emerald-300/[.12] text-emerald-200',
               warming && 'border-emerald-300/25 bg-emerald-300/[.08] text-emerald-200',
-              offline && 'border-amber-300/30 bg-amber-300/[.08] text-amber-200',
+              offline && 'border-amber-300/30 bg-amber-300/[.08] text-amber-200'
             )}
           >
             {ready ? <CheckCircle2 className="h-5 w-5" /> : offline ? <WifiOff className="h-5 w-5" /> : <Loader2 className="h-5 w-5 animate-spin" />}
@@ -122,7 +107,7 @@ export function BackendWakeup() {
                 setStatus('checking');
                 setMessage('Reintentando conexión con el backend...');
                 setVisible(true);
-                warmBackend({ force: true }).catch(() => undefined);
+                warmBackend({ force: true, attempts: 10, timeoutMs: 6500, intervalMs: 3500, showUi: true, displayDelayMs: 0 }).catch(() => undefined);
               }}
             >
               <RefreshCw className="h-4 w-4" />

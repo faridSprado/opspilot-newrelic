@@ -63,56 +63,102 @@ async function fetchBackendHealth(timeoutMs: number) {
   }
 }
 
-export async function warmBackend(options: { force?: boolean; attempts?: number; intervalMs?: number; timeoutMs?: number } = {}) {
+export async function warmBackend(
+  options: {
+    force?: boolean;
+    attempts?: number;
+    intervalMs?: number;
+    timeoutMs?: number;
+    showUi?: boolean;
+    displayDelayMs?: number;
+  } = {}
+) {
   if (!isBrowser() || !shouldWarmBackend()) return true;
 
-  const { force = false, attempts = 10, intervalMs = 4500, timeoutMs = 8500 } = options;
+  const {
+    force = false,
+    attempts = 6,
+    intervalMs = 3000,
+    timeoutMs = 5500,
+    showUi = false,
+    displayDelayMs = 6500
+  } = options;
+
   if (!force && Date.now() - backendReadyAt < BACKEND_READY_TTL_MS) return true;
   if (warmupPromise && !force) return warmupPromise;
 
   warmupPromise = (async () => {
-    emitBackendWakeup({
-      status: 'checking',
-      attempt: 1,
-      maxAttempts: attempts,
-      message: 'Preparando el servicio de OpsPilot...'
-    });
+    let uiVisible = false;
+    let currentAttempt = 1;
+    let displayTimer: number | undefined;
 
-    for (let attempt = 1; attempt <= attempts; attempt += 1) {
-      try {
-        const ok = await fetchBackendHealth(timeoutMs);
-        if (ok) {
-          backendReadyAt = Date.now();
-          emitBackendWakeup({
-            status: 'ready',
-            attempt,
-            maxAttempts: attempts,
-            message: 'OpsPilot está listo para recibir consultas.'
-          });
-          return true;
-        }
-      } catch {
-        // Render Free can return network errors or 502/503 while the service is waking up.
-      }
+    const showWakeupUi = (message = 'Preparando el servicio de OpsPilot...') => {
+      if (!showUi || uiVisible) return;
+      uiVisible = true;
+      emitBackendWakeup({
+        status: 'checking',
+        attempt: currentAttempt,
+        maxAttempts: attempts,
+        message
+      });
+    };
 
-      if (attempt < attempts) {
-        emitBackendWakeup({
-          status: 'warming',
-          attempt,
-          maxAttempts: attempts,
-          message: 'El servicio gratuito estaba inactivo. Lo estamos activando automáticamente.'
-        });
-        await wait(intervalMs);
-      }
+    const emitIfVisible = (detail: Omit<BackendWakeupEventDetail, 'apiBase'>) => {
+      if (!uiVisible) return;
+      emitBackendWakeup(detail);
+    };
+
+    if (showUi) {
+      displayTimer = window.setTimeout(() => {
+        showWakeupUi('El servicio gratuito puede tardar unos segundos si estuvo inactivo. Lo estamos comprobando antes de continuar.');
+      }, displayDelayMs);
     }
 
-    emitBackendWakeup({
-      status: 'offline',
-      attempt: attempts,
-      maxAttempts: attempts,
-      message: 'No fue posible confirmar el backend todavía. Puedes reintentar en unos segundos.'
-    });
-    return false;
+    try {
+      for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        currentAttempt = attempt;
+        try {
+          const ok = await fetchBackendHealth(timeoutMs);
+          if (ok) {
+            backendReadyAt = Date.now();
+            if (displayTimer) window.clearTimeout(displayTimer);
+            emitIfVisible({
+              status: 'ready',
+              attempt,
+              maxAttempts: attempts,
+              message: 'OpsPilot está listo para recibir consultas.'
+            });
+            return true;
+          }
+        } catch {
+          // Render Free can return network errors or 502/503 while the service is waking up.
+        }
+
+        if (attempt < attempts) {
+          emitIfVisible({
+            status: 'warming',
+            attempt,
+            maxAttempts: attempts,
+            message: 'El servicio gratuito estaba inactivo. Lo estamos activando automáticamente.'
+          });
+          await wait(intervalMs);
+        }
+      }
+
+      if (displayTimer) window.clearTimeout(displayTimer);
+      if (showUi) {
+        showWakeupUi('No fue posible confirmar el backend todavía. Puedes reintentar en unos segundos.');
+        emitBackendWakeup({
+          status: 'offline',
+          attempt: attempts,
+          maxAttempts: attempts,
+          message: 'No fue posible confirmar el backend todavía. Puedes reintentar en unos segundos.'
+        });
+      }
+      return false;
+    } finally {
+      if (displayTimer) window.clearTimeout(displayTimer);
+    }
   })();
 
   try {
@@ -187,7 +233,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, option
   if (profileId) headers.set('X-Credential-Profile-Id', profileId);
 
   if (path !== '/health' && shouldWarmBackend()) {
-    await warmBackend({ attempts: 8 });
+    await warmBackend({ attempts: 6, timeoutMs: 5500, intervalMs: 3000, showUi: true, displayDelayMs: 6500 });
   }
 
   let response: Response;
@@ -195,7 +241,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, option
     response = await performApiFetch(path, init, headers);
   } catch {
     if (shouldWarmBackend()) {
-      const warmed = await warmBackend({ force: true, attempts: 10 });
+      const warmed = await warmBackend({ force: true, attempts: 10, timeoutMs: 6500, intervalMs: 3500, showUi: true, displayDelayMs: 1000 });
       if (warmed) {
         try {
           response = await performApiFetch(path, init, headers);
@@ -211,7 +257,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, option
   }
 
   if (shouldWarmBackend() && shouldRetryBackendStatus(response.status)) {
-    const warmed = await warmBackend({ force: true, attempts: 10 });
+    const warmed = await warmBackend({ force: true, attempts: 10, timeoutMs: 6500, intervalMs: 3500, showUi: true, displayDelayMs: 1000 });
     if (warmed) {
       response = await performApiFetch(path, init, headers);
     }
